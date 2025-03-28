@@ -5,8 +5,8 @@ let boardHeight = 640;
 let context;
 
 //rocket
-let rocketWidth = 34*2;
-let rocketHeight = 24*2;
+let rocketWidth = 126.4/2;
+let rocketHeight = 75.8/2;
 let rocketX = boardWidth/20;
 let rocketY = (boardHeight - rocketHeight)/2;
 let rocketImg;
@@ -28,7 +28,7 @@ let asteroid1X = boardWidth;
 let asteroid1Y = 0;
 
 
-let asteroid2Width =70.4;
+let asteroid2Width = 70.4;
 let asteroid2Height = 67.2;
 let asteroid2X = boardWidth;
 //let asteroidY = Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled);
@@ -49,6 +49,7 @@ let gravity = .2;
 //stats
 let gameOver = false;
 let score = 0;
+let highScore = 0;
 
 window.onload = function() {
     //context
@@ -74,10 +75,21 @@ window.onload = function() {
     setInterval(placeAsteroids, 800);
 
     document.addEventListener("keydown", function(e){
-        keyPressed = true;
+        if (e.code == "Space"){
+            keyPressed = true;
+        }
+        else if (e.code == "KeyR" && gameOver){
+            gameOver = false;
+            rocket.y = rocketY;
+            asteroidArray = [];
+            score = 0;
+            velocityY = 0;
+        }
     });
     document.addEventListener("keyup", function(e){
-        keyPressed = false;
+        if (e.code == "Space"){
+            keyPressed = false;
+        }
     });
 
     document.addEventListener("mousedown", function(e){
@@ -94,12 +106,16 @@ window.onload = function() {
         e.preventDefault();
         touchPressed = false;
     });
-
-    
 }
 
 function update(){
     requestAnimationFrame(update);
+    if (gameOver){
+        context.textAlign = 'center';
+        context.fillText("GAME OVER", boardWidth/2, boardHeight/2);
+        context.textAlign = 'left';
+        return;
+    }
 
     context.clearRect(0, 0, board.width, board.height);
 
@@ -122,6 +138,10 @@ function update(){
 
     context.drawImage(rocketImg, rocket.x, rocket.y, rocket.width, rocket.height);
 
+    if (rocket.y > board.height){
+        gameOver = true;
+    }
+
 
     //asteroids
     for (let i = 0; i < asteroidArray.length; i++){
@@ -130,17 +150,36 @@ function update(){
         context.drawImage(asteroid.img, asteroid.x, asteroid.y, asteroid.width, asteroid.height);
 
         if (!asteroid.passed && rocket.x > asteroid.x + asteroid.width){
-            score += .5;
+            score += 1;
             asteroid.passed = true;
+            if (score > highScore){
+                highScore = score;
+            }
+        }
+
+        if (detectCollision(rocket, asteroid)){
+            gameOver = true;
         }
     }
 
 
     //clear asteroids
-    while (asteroidArray.length > 0 && asteroidArray[0].x < -asteroidWidth){
+    while (asteroidArray.length > 0 && asteroidArray[0].x < Math.max(-asteroid1Width, -asteroid2Width)){
         asteroidArray.shift();
     }
 
+
+    //score
+    context.fillStyle = "white";
+    context.font = "45px sans-serif";
+    context.fillText("High Score: " + highScore, 5, 45);
+    context.fillText("Score: " + score, 5, 95);
+    
+    if (gameOver){
+        context.textAlign = 'center';
+        context.fillText("GAME OVER", boardWidth/2, boardHeight/2);
+        context.textAlign = 'left';
+    }
 }
 
 function placeAsteroids(){
@@ -180,4 +219,11 @@ function placeAsteroids(){
     
         asteroidArray.push(asteroid);
     }
+}
+
+function detectCollision(a, b){
+    return a.x < b.x + b.width &&
+            a.x + a.width > b.x &&
+            a.y < b.y + b.height &&
+            a.y + a.height > b.y;
 }
